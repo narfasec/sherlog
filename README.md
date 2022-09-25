@@ -1,5 +1,5 @@
 # Sherlog
-![Sherlog art](https://www.clipartmax.com/png/middle/286-2860475_sherlock-holmes-silhouette-chess-knight-icon-png.png =250x250)
+<img src="https://www.clipartmax.com/png/middle/286-2860475_sherlock-holmes-silhouette-chess-knight-icon-png.png" width="250" height="250">
 
 ## Description
 Inspects resources logging status and gives recomendations according to security best practices
