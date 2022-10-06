@@ -23,11 +23,10 @@ class DBConnection:
             coll = db.createCollection(name=collection)
         else:
             coll = db[collection]
-        
         for i in list:
                 try:
                     doc=coll[i["arn"].replace("/",":")]
-                except Exception as e:
+                except Exception:
                     doc = coll.createDocument()
                     doc._key = i["arn"].replace("/",":")
 

@@ -28,6 +28,7 @@ class SherlogS3:
             return self.format_data(results=s3_logs_disabled)
         else:
             self.log.info('S3 buckets with logs disabled not found')
+            return None
 
     def get_bucket_logging_of_s3(self, bucket_name):
         '''
