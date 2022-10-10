@@ -1,8 +1,8 @@
 import logging
 import os
-
 from modules.aws_session import AwsSession
 from modules.sherlog_s3 import SherlogS3
+from modules.sherlog_rds import SherlogRDS
 from modules.arango import DBConnection
 
 ## Global variable
@@ -194,18 +194,32 @@ def main():
 			session_name='test'
 		).get_session()
 
-		if SherlogS3(log, session).analyze():
-			buckets, buckets_tags, buckets_associations = SherlogS3(log, session).analyze()
+		# Inspecting S3
+		sherlog_s3 = SherlogS3(log, session)
+		if sherlog_s3.analyze():
+			buckets, buckets_tags, buckets_associations = sherlog_s3.analyze()
 			resource_tags.extend(buckets_tags)
 			associations.extend(buckets_associations)
-
-		if buckets:
-			db_connection = DBConnection(log)
-			db_connection.list_to_collection(collection='sherlog_resources', list=buckets)
-			db_connection.list_to_collection(list=resource_tags, collection='resource_tags')
-			db_connection.create_association(associations=associations)
+			all_results.append(buckets)
 		else:
 			log.info('Everything ok, nothing to report')
+		
+		sherlog_rds = SherlogRDS(log, session)
+		sherlog_rds.analyze()
+		if sherlog_rds.get_results():
+			rds_instances, rds_tags, rds_associations = sherlog_rds.get_results()
+			resource_tags.extend(rds_tags)
+			associations.extend(rds_associations)
+			all_results.append(rds_instances)
+		
+		# Populate DB
+		db_connection = DBConnection(log)
+		for result in all_results:
+			db_connection.list_to_collection(collection='sherlog_resources', list=result)
+		db_connection.list_to_collection(list=resource_tags, collection='resource_tags')
+		db_connection.create_association(associations=associations)
+		
+
 
 if __name__ == "__main__":
     main()

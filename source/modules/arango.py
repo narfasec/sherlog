@@ -36,7 +36,6 @@ class DBConnection:
                 doc.save()
 
         self.log.info(f'[list_to_collection] End')
-
         return 1
 
     def create_association(self,associations):

@@ -5,12 +5,12 @@
 Inspects resources logging status and gives recomendations according to security best practices
 
 Services covered by this tool:
-- AWS ELB
-- API Gateway
 - S3 Buckets
 - RDS Databases
-- EC2 instances
-- Redshift Databases
+To come:
+- DynamoDB
+- Lambdas
+- ELBs
 
 ## Setup
 Create a role in your environment with the below (example) trust relationship policy and assign the AWS ***SecurityAudit*** permissions
@@ -24,7 +24,7 @@ Example:
             "Sid": "Statement1",
             "Effect": "Allow",
             "Principal": {
-                "AWS": "YOUR_ACCOUNT_id"
+                "AWS": "YOUR_ACCOUNT_ID"
             },
             "Action": "sts:AssumeRole",
             "Condition": {
