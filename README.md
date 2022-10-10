@@ -7,6 +7,7 @@ Inspects resources logging status and gives recomendations according to security
 Services covered by this tool:
 - S3 Buckets
 - RDS Databases
+
 To come:
 - DynamoDB
 - Lambdas
