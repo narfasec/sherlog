@@ -39,9 +39,7 @@ class SherlogS3:
         except ClientError as excp:
             raise Exception("boto3 client error in get_bucket_logging_of_s3: " + excp) from excp
         except Exception as excp:
-            raise Exception(
-                "Unexpected error in get_bucket_logging_of_s3 function: " + excp
-            ) from excp
+            self.log.error("Unexpected error in get_bucket_logging_of_s3 function: " + str(excp))
         return result
     
     def format_data(self, results):

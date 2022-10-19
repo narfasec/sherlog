@@ -41,25 +41,26 @@ class SherlogRDS:
             if rds_instances:
                 for instance in rds_instances['DBInstances']:
                     rds_name = instance['DBInstanceIdentifier']
+                    engine = instance['Engine']
                     self.log.info('RDS instance found, analysing log configurationfor %s', rds_name)
                     arn = f"arn:aws:rds:{region}:{self.account_id}:db:{rds_name}"
                     try:
-                        if "audit" not in instance["EnabledCloudwatchLogsExports"]:
+                        if "audit" not in instance["EnabledCloudwatchLogsExports"] and engine not in ['postgres', 'sqlserver-ex']:
                             tags = rds.list_tags_for_resource(ResourceName=arn)
-                            self.format_data(rds_name=rds_name, region=region, resource_type='db', tags=tags, arn=arn)
+                            self.format_data(rds_name=rds_name, region=region, resource_type='db', tags=tags, arn=arn, engine=engine)
                             self.has_results = True
                         else:
                             self.log.info('RDS with audit logs enabled')
                     except KeyError:
                         self.log.debug('Key Error! This means the instance does not have logs enabled')
                         tags = rds.list_tags_for_resource(ResourceName=arn)
-                        self.format_data(rds_name=rds_name, region=region, resource_type='db', tags=tags, arn=arn)
+                        self.format_data(rds_name=rds_name, region=region, resource_type='db', tags=tags, arn=arn, engine=engine)
                         self.has_results = True
                     except Exception as exception:
                         self.log.error(exception)
 
     
-    def format_data(self, rds_name, region, resource_type, tags, arn):
+    def format_data(self, rds_name, region, resource_type, tags, arn, engine):
         """
         Format data to insert on DB
         """
@@ -70,8 +71,9 @@ class SherlogRDS:
             "region":region,
             "service":"rds",
             "resourceType":resource_type,
+            "engine":engine,
             "arn":arn,
-            "policy":"sherlog-2-1"
+            "policy":"sherlog-3-1"
         })
         self.resource_tags.append(
             {
