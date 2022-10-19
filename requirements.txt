@@ -1,6 +1,2 @@
-getopt
-sys
 boto3
-json
-string
 pyarango
