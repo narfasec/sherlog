@@ -1,3 +1,4 @@
+from typing import Tuple
 import boto3, botocore, os
 from botocore.exceptions import ClientError
 
@@ -16,7 +17,7 @@ class SherlogRDS:
         self.resource_tags=[]
         self.has_results=False
     
-    def get_results(self):
+    def get_results(self) -> Tuple[list, list, list]:
         '''
         Geter for results
         '''
@@ -30,13 +31,12 @@ class SherlogRDS:
         Function that will read the logging status of rds instances
         '''
         for region in self.available_regions:
-            print(region)
             rds = self.session.client('rds', region_name=region)
             try:
                 rds_instances = rds.describe_db_instances()
             except ClientError as c_error:
-                self.log.error('Error describing instances on regio: %s', region)
-                self.log.error(c_error)
+                self.log.error('Error describing instances on region: %s', region)
+                # self.log.error(c_error)
                 continue
             if rds_instances:
                 for instance in rds_instances['DBInstances']:

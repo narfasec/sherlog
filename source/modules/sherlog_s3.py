@@ -1,3 +1,6 @@
+'''
+'''
+from typing import Tuple
 import boto3, botocore, os
 from botocore.exceptions import ClientError
 
@@ -54,7 +57,7 @@ class SherlogS3:
                 "name":result,
                 "rational":"Public Policy",
                 "accountId":self.account_id,
-                "service":"s3",
+                "service":"cloudfront",
                 "resourceType":"bucket",
                 "arn":f"arn:aws:s3:::{result}",
                 "policy":"sherlog-1-1"

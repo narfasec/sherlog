@@ -3,6 +3,7 @@ import os
 from modules.aws_session import AwsSession
 from modules.sherlog_s3 import SherlogS3
 from modules.sherlog_rds import SherlogRDS
+from modules.sherlog_cloudfront import SherlogCF
 from modules.arango import DBConnection
 
 ## Global variable
@@ -170,10 +171,6 @@ def main():
 	
 	role_name = os.environ['ROLE_NAME']
 	accounts_configuration = list(eval(os.environ['ACCOUNTS_CONFIGURATION']))
-	db_url = os.environ['DB_URL']
-	db_username = os.environ['DB_USERNAME']
-	db_password = os.environ['DB_PASSWORD']
-	db_name = os.environ['DB_NAME']
 
 	resource_tags=[]
 	all_results = []
@@ -212,6 +209,14 @@ def main():
 			associations.extend(rds_associations)
 			all_results.append(rds_instances)
 		
+		sherlog_cloudfront = SherlogCF(log, session)
+		sherlog_cloudfront.analyze()
+		if sherlog_cloudfront.get_results():
+			cf_dists, cf_tags, cf_associations = sherlog_cloudfront.get_results()
+			resource_tags.extend(cf_tags)
+			associations.extend(cf_associations)
+			all_results.append(cf_dists)
+			
 		# Populate DB
 		db_connection = DBConnection(log)
 		for result in all_results:
