@@ -52,3 +52,11 @@ class DBConnection:
             queryResult = db.AQLQuery(aql)
         self.log.info(f'[create_association] End')
         return 1
+
+    def get_results_by_account_id(self, account_id) -> list:
+        '''
+        Function to retrive all results from given AWS account
+        '''
+        d_b = self.conn[self.db_name]
+        aql = f"FOR c in public_resources FILTER c.accountId == '{account_id}' RETURN c"
+        return d_b.AQLQuery(aql)
