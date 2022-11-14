@@ -1,0 +1,12 @@
+{
+    "LoggingEnabled": false,
+    "BucketName": "string",
+    "S3KeyPrefix": "string",
+    "LastSuccessfulDeliveryTime": 123,
+    "LastFailureTime": 123,
+    "LastFailureMessage": "string",
+    "LogDestinationType": "cloudwatch",
+    "LogExports": [
+        "string"
+    ]
+}
