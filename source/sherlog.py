@@ -193,9 +193,10 @@ def main(format, output):
 				external_id=a_c['externalId'],
 				session_name='test'
 			).get_session()
+			account_id = session.client('sts').get_caller_identity().get('Account')
 
 			# Inspecting S3
-			sherlog_s3 = SherlogS3(log, session)
+			sherlog_s3 = SherlogS3(log, account_id)
 			if sherlog_s3.analyze():
 				buckets, buckets_tags, buckets_associations = sherlog_s3.analyze()
 				resource_tags.extend(buckets_tags)
@@ -206,7 +207,7 @@ def main(format, output):
 			
 			#Inspecting RDS
 			sherlog_rds = SherlogRDS(log, session)
-			sherlog_rds.analyze()
+			sherlog_rds.start(session)
 			if sherlog_rds.get_results():
 				rds_instances, rds_tags, rds_associations = sherlog_rds.get_results()
 				resource_tags.extend(rds_tags)
@@ -223,7 +224,6 @@ def main(format, output):
 				all_results.append(cf_dists)
 			
 			# Inspecting Redshift #TODO
-			account_id = session.client('sts').get_caller_identity().get('Account')
 			sherlog_redshift = SherlogRedshift(log, account_id)
 			if sherlog_redshift.analyze():
 				if sherlog_cloudfront.get_results():

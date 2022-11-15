@@ -1,0 +1,18 @@
+{
+    "LoggingEnabled": {
+        "TargetBucket": "string",
+        "TargetGrants": [
+            {
+                "Grantee": {
+                    "DisplayName": "string",
+                    "EmailAddress": "string",
+                    "ID": "string",
+                    "Type": "CanonicalUser",
+                    "URI": "string"
+                },
+                "Permission": "FULL_CONTROL"
+            }
+        ],
+        "TargetPrefix": "string"
+    }
+}

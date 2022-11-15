@@ -74,9 +74,8 @@ class SherlogRedshift:
         '''
         if data['LoggingEnabled'] is not True:
             return False
-        else:
-            self.log.info('Redshift cluster %s has log status enabled', data['ClusterIdentifier'])
-            return True
+        self.log.info('Redshift cluster %s has log status enabled', data['ClusterIdentifier'])
+        return True
 
 
     def format_data(self, redshift_name, region, node_type, tags, arn):
