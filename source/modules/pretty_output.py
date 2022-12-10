@@ -1,0 +1,73 @@
+'''
+slds
+'''
+from tabulate import tabulate # pylint: disable=E0401
+
+class PrettyOutput:
+    '''
+    '''
+    def __init__(self):
+        self.HEADER = '\033[95m'
+        self.OKBLUE = '\033[94m'
+        self.OKCYAN = '\033[96m'
+        self.OKGREEN = '\033[92m'
+        self.WARNING = '\033[93m'
+        self.FAIL = '\033[91m'
+        self.ENDC = '\033[0m'
+        self.BOLD = '\033[1m'
+        self.UNDERLINE = '\033[4m'
+    
+        
+    def print_banner(self):
+        '''
+        '''
+        # Banner by https://manytools.org/hacker-tools/ascii-banner/
+        print("\n███████╗██╗  ██╗███████╗██████╗ ██╗      ██████╗  ██████╗ ")
+        print("██╔════╝██║  ██║██╔════╝██╔══██╗██║     ██╔═══██╗██╔════╝ ")
+        print("███████╗███████║█████╗  ██████╔╝██║     ██║   ██║██║  ███╗")
+        print("╚════██║██╔══██║██╔══╝  ██╔══██╗██║     ██║   ██║██║   ██║")
+        print("███████║██║  ██║███████╗██║  ██║███████╗╚██████╔╝╚██████╔╝")
+        print("╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝  ╚═════╝ ")
+        print("                                              by Octoguard")
+    
+    def success(self):
+        '''
+        Print success message
+        '''
+        print("\n"+self.OKGREEN+"Sherlog has found AWS resources that are not logging according to security best practices."+self.ENDC+"\n")
+    
+    def print_color(self, text, color=None, header=None):
+        '''
+        Print desired text with prefered color
+        
+        Args:
+            text   (str): Text to be printed
+            colors (str): Color for the printed text (Default is None)
+                Colors available:
+                    - 'green'
+                    - 'blue'
+                    - 'yellow'
+                    - 'red'
+        '''
+        if header:
+            print('\n'+self.HEADER+self.UNDERLINE+header+self.ENDC)
+        if color == 'green':
+            print(self.OKGREEN+text+self.ENDC)
+        elif color == 'blue':
+            print(self.OKBLUE+text+self.ENDC)
+        elif color == 'yellow':
+            print(self.WARNING+text+self.ENDC)
+        elif color == 'red':
+            print(self.FAIL+text+self.ENDC)
+        else:
+            print(text)
+        
+    def print_results(self, headers, values, color=None):
+        '''
+        print with colors
+        '''
+        print(tabulate(
+            values,
+            headers=headers,
+            tablefmt='orgtbl')
+        )

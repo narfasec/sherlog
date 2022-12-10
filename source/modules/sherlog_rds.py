@@ -34,15 +34,17 @@ class SherlogRDS:
             rds = self.session.client('rds', region_name=region)
             try:
                 rds_instances = rds.describe_db_instances()
-            except ClientError as c_error:
-                self.log.error('Error describing instances on region: %s', region)
-                # self.log.error(c_error)
+            except ClientError:
+                self.log.debug('Error describing instances on region: %s', region)
                 continue
+            except Exception as error:
+                self.log.error(error)
+                
             if rds_instances:
                 for instance in rds_instances['DBInstances']:
                     rds_name = instance['DBInstanceIdentifier']
                     engine = instance['Engine']
-                    self.log.info('RDS instance found, analysing log configurationfor %s', rds_name)
+                    self.log.debug('RDS instance found, analysing log configurationfor %s', rds_name)
                     arn = f"arn:aws:rds:{region}:{self.account_id}:db:{rds_name}"
                     try:
                         if "audit" not in instance["EnabledCloudwatchLogsExports"] and engine not in ['postgres', 'sqlserver-ex']:
@@ -50,7 +52,7 @@ class SherlogRDS:
                             self.format_data(rds_name=rds_name, region=region, resource_type='db', tags=tags, arn=arn, engine=engine)
                             self.has_results = True
                         else:
-                            self.log.info('RDS with audit logs enabled')
+                            self.log.debug('RDS with audit logs enabled')
                     except KeyError:
                         self.log.debug('Key Error! This means the instance does not have logs enabled')
                         tags = rds.list_tags_for_resource(ResourceName=arn)

@@ -1,19 +1,18 @@
 '''
 '''
 from typing import Tuple
-import boto3, botocore, os
+import boto3, sys
 from botocore.exceptions import ClientError
 
 class SherlogS3:
     '''
     Sherlog class to inspect S3 buckets
     '''
-    def __init__(self, log, account_id):
+    def __init__(self, log):
         # Get available regions list
         self.log = log
         self.available_regions = boto3.Session().get_available_regions('s3')
-        self.account_id=account_id
-        self.formatted_results = []
+        self.formated_results = []
         self.resource_tags=[]
         self.associations=[]
         self.has_results=False
@@ -35,14 +34,31 @@ class SherlogS3:
         if self.get_buckets(session):
             buckets = self.get_buckets(session)
         for bucket in buckets['Buckets']:
-            result = self.get_bucket_logging_of_s3(session, bucket["Name"])["LoggingEnabled"]
-            logging = self.analyze(result)
+            result = {}
+            try:
+                result = self.get_bucket_logging_of_s3(session, bucket["Name"])["LoggingEnabled"]
+                logging = self.analyze(result)
+            except KeyError:
+                logging = False
+            except Exception as error:
+                self.log.error(error)
+                
             if not logging:
                 self.has_results=True
                 name = bucket["Name"]
                 arn = f"arn:aws:s3:::{name}"
-                tags = session.client('S3').get_bucket_tagging(Bucket=result['name'])
-                self.format_data(name=name)
+                tags = {}
+                try:
+                    tags = session.client('s3').get_bucket_tagging(Bucket=name)
+                except KeyError:
+                    print(result)
+                    print('name not found')
+                except ClientError as error:
+                    if 'NoSuchTagSet' not in str(error):
+                        self.log.error(error)
+                except Exception as error:
+                    self.log.error(error)
+                self.format_data(name=name, tags=tags, arn=arn)
 
     def get_buckets(self, session) -> dict:
         '''
@@ -77,27 +93,26 @@ class SherlogS3:
             return True
         return False
     
-    def format_data(self, name, region, tags, arn):
+    def format_data(self, name, tags, arn):
         """
         Format data in json
         """
         self.formated_results.append({
             "name":name,
             "rational":"Public Policy",
-            "accountId":self.account_id,
-            "region":region,
             "service":"s3",
             "arn":arn,
             "policy":"sherlog-1-1"
         })
-        self.resource_tags.append(
-            {
-                "arn":f"{self.account_id}/tags/{arn}",
-                "tags":tags
-            })
-        self.associations.append(
-            {
-                "parentId":arn,
-                "childId":f"{self.account_id}/tags/{arn}"
-            }
-        )
+        # self.resource_tags.append(
+        #     {
+        #         "arn":f"{self.account_id}/tags/{arn}",
+        #         "tags":tags
+        #     })
+        # self.associations.append(
+        #     {
+        #         "parentId":arn,
+        #         "childId":f"{self.account_id}/tags/{arn}"
+        #     }
+        # )
+

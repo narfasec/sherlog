@@ -1,4 +1,7 @@
 boto3
+sys
+getopt
 pyarango
 pytest
 pytest-mock
+tabulate
