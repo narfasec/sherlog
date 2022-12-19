@@ -2,8 +2,12 @@
 Sherlog Inititator
 '''
 import logging
-import os
 import boto3
+import itertools
+import threading
+import time
+import sys
+
 from botocore.exceptions import ClientError
 from .aws_session import AwsSession
 from .sherlog_s3 import SherlogS3
@@ -12,6 +16,7 @@ from .sherlog_cloudfront import SherlogCF
 from .sherlog_redshift import SherlogRedshift
 from .arango import DBConnection
 from .pretty_output import PrettyOutput
+from .loader import Loader
 
 class Sherlog:
     '''
@@ -24,8 +29,9 @@ class Sherlog:
         self.output = output
         self.format = format
         self.session=boto3.session.Session(profile_name=profile)
-        self.output = PrettyOutput()
+        self.pretty_output = PrettyOutput()
         self.all_results = []
+        self.done = False
     
     def print_results(self, results):
         '''
@@ -36,7 +42,7 @@ class Sherlog:
             if 's3' in result:
                 headers = ['Bucket', 'arn', 'Policy']
                 if len(result['s3']) == 1:
-                    self.output.print_color(
+                    self.pretty_output.print_color(
                         header='S3, Sherlog-1-1',
                         text="Found one s3 bucket without access logs. Consider enabling access logs on buckets that contain critical information to audit every resquest. See how to enable on https://www.ocotoguard.io/sherlog-1-1",
                         color='yellow'
@@ -45,9 +51,9 @@ class Sherlog:
                     arn = result['arn']
                     policy = result['policy']
                     values = [name, arn, policy]
-                    self.output.print_results(headers=headers, values=values)
+                    self.pretty_output.print_results(headers=headers, values=values)
                 else:
-                    self.output.print_color(
+                    self.pretty_output.print_color(
                         header='S3, Sherlog-1-1',
                         text="Found s3 buckets without access logs. Consider enabling access logs on buckets that contain critical information to audit every resquest. See how to enable on https://www.ocotoguard.io/sherlog-1-1",
                         color='yellow'
@@ -58,17 +64,17 @@ class Sherlog:
                         arn = s3_result['arn']
                         policy = s3_result['policy']
                         values.append([name,arn,policy])
-                    self.output.print_results(headers=headers, values=values)
+                    self.pretty_output.print_results(headers=headers, values=values)
             if 'cloudfront' in result:
-                headers = ['Name', 'arn','Engine', 'Policy']
+                headers = ['Name', 'arn','Policy']
                 if len(result['cloudfront']) == 1:
-                    self.output.print_color(
+                    self.pretty_output.print_color(
                         header='Cloudfront, Sherlog-4-1',
                         text="Found one CF distribution instance without audit logs. Consider enabling audit logs on distributions that handle critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-4-1",
                         color='yellow'
                     )
                 else:
-                    self.output.print_color(
+                    self.pretty_output.print_color(
                         header='Cloudfront, Sherlog-4-1',
                         text="Found cloudfront distributions without audit logs. Consider enabling audit logs on distributions that handle critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-4-1",
                         color='yellow'
@@ -77,11 +83,11 @@ class Sherlog:
                 for cf_result in result['cloudfront']:
                     name, arn, policy = cf_result['name'], cf_result['arn'], cf_result['policy']
                     values.append([name,arn,policy])
-                self.output.print_results(headers=headers, values=values)
+                self.pretty_output.print_results(headers=headers, values=values)
             if 'rds' in result:
                 headers = ['Name', 'Region', 'arn','Engine', 'Policy']
                 if len(result['rds']) == 1:
-                    self.output.print_color(
+                    self.pretty_output.print_color(
                         header='RDS, Sherlog-3-1',
                         text="Found one rds instance without audit logs. Consider enabling audit logs on database that contain critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-3-1",
                         color='yellow'
@@ -91,9 +97,9 @@ class Sherlog:
                     engine = result['engine']
                     policy = result['policy']
                     values = [name, arn, engine, policy]
-                    self.output.print_results(headers=headers, values=values)
+                    self.pretty_output.print_results(headers=headers, values=values)
                 else:
-                    self.output.print_color(
+                    self.pretty_output.print_color(
                         header='RDS, Sherlog-3-1',
                         text="Found rds instances without audit logs. Consider enabling audit logs on databases that contain critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-3-1",
                         color='yellow'
@@ -102,7 +108,19 @@ class Sherlog:
                     for rds_result in result['rds']:
                         name, region, arn, engine, policy = rds_result['name'], rds_result['region'], rds_result['arn'],rds_result['engine'], rds_result['policy']
                         values.append([name,region,arn,engine,policy])
-                    self.output.print_results(headers=headers, values=values)
+                    self.pretty_output.print_results(headers=headers, values=values)
+    
+    def animate(self):
+        '''
+        Simple animation to create a loader during sherlog processing
+        '''
+        for c in itertools.cycle(["⢿", "⣻", "⣽", "⣾", "⣷", "⣯", "⣟", "⡿"]):
+            if self.done:
+                break
+            sys.stdout.write('\rloading ' + c +' ')
+            sys.stdout.flush()
+            time.sleep(0.1)
+        sys.stdout.write('\rDone!     ')
             
     def init(self):
         '''
@@ -114,15 +132,17 @@ class Sherlog:
         if self.debug:
             log.setLevel('DEBUG')
         log.setLevel('INFO')
-        self.output.print_color(text='Starting sherlog engine', color='green')
+        self.pretty_output.print_color(text='Starting sherlog engine', color='green')
+        loader = Loader("Scanning...", "Done!", 0.05).start()
+        
         
         # Verify credentials
         sts = self.session.client('sts')
         try:
             sts.get_caller_identity()
         except ClientError as client_error:
-            self.output.print_color(text=str(client_error), color='red')
-            self.output.print_color(text='Check if your AWS credentials are updated', color='red')
+            self.pretty_output.print_color(text=str(client_error), color='red')
+            self.pretty_output.print_color(text='Check if your AWS credentials are updated', color='red')
             exit(1)
         
         resource_tags=[]
@@ -158,7 +178,7 @@ class Sherlog:
             all_results.append({'cloudfront':cf_dists})
         
         if all_results:
-            self.output.success()
+            self.pretty_output.success()
             if self.format == 'JSON':
                 #TODO
                 return None
@@ -170,10 +190,11 @@ class Sherlog:
                     db_connection.list_to_collection(list=resource_tags, collection='resource_tags') # pylint: disable=E1101
                 db_connection.create_association(associations=associations) # pylint: disable=E1101
             else:
-                self.output.print_color(text='Results here:', color='red')
+                loader.stop()
+                self.pretty_output.print_color(text='Results here:', color='red')
                 self.print_results(results=all_results)
         
-        return self.output.print_color(text="Scan finished successfully", color='green')
+        return self.pretty_output.print_color(text="Scan finished successfully", color='green')
 
 		
 		# Inspecting Redshift #TODO

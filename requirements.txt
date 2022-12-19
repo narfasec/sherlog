@@ -1,5 +1,4 @@
 boto3
-sys
 getopt
 pyarango
 pytest

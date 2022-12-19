@@ -30,11 +30,11 @@ class PrettyOutput:
         print("╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝  ╚═════╝ ")
         print("                                              by Octoguard")
     
-    def success(self):
+    def success(self, text='Sherlog has found AWS resources that are not logging according to security best practices.'):
         '''
         Print success message
         '''
-        print("\n"+self.OKGREEN+"Sherlog has found AWS resources that are not logging according to security best practices."+self.ENDC+"\n")
+        print("\n"+self.OKGREEN+text+self.ENDC+"\n")
     
     def print_color(self, text, color=None, header=None):
         '''
