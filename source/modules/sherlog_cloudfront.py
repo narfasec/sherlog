@@ -41,7 +41,7 @@ class SherlogCF:
             for page in page_iterator:
                 distributions += [d["Id"] for d in page['DistributionList']['Items']]
         except KeyError:
-            self.log.info('No CloudFront Distributions found')
+            self.log.debug('No CloudFront Distributions found')
 
         for item in distributions:
             try:
