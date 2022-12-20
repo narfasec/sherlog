@@ -1,4 +1,7 @@
 def all_regions():
+    '''
+    Array with all regions available on AWS
+    '''
     return [
 		"us-east-2",
 		"us-east-1",

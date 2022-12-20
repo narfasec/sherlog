@@ -7,10 +7,11 @@ class SherlogDynamo:
     '''
     Sherlog class to inspect RDS databases
     '''
-    def __init__(self, log, session):
+    def __init__(self, log, session, regions):
         # Get available regions list
         self.log = log
         self.available_regions = boto3.Session().get_available_regions('dynamodb')
+        self.regions = regions
         self.account_id=session.client('sts').get_caller_identity().get('Account')
         self.session=session
         self.formated_results=[]
@@ -26,15 +27,31 @@ class SherlogDynamo:
             return self.formated_results, self.resource_tags, self.associations
         else:
             return None
-
+    
+    def get_relevant_regions(self):
+        '''
+        Filter selected regions if user used --region option
+        '''
+        resource_regions = []
+        if self.regions == "all-regions":
+            return self.available_regions
+        else:
+            for region in self.regions:
+                if region in self.available_regions:
+                    resource_regions.append(region)
+        return resource_regions
+    
     def analyze(self):
         '''
         Function that will read the logging status of rds instances
         '''
-        for region in self.available_regions:
+        selected_regions = self.get_relevant_regions()
+        for region in selected_regions:
             dynamodb = self.session.client('dynamodb', region_name=region)
             try:
                 tables = dynamodb.list_tables()
+                if not tables:
+                    continue
             except ClientError:
                 self.log.debug('Error describing instances on region: %s', region)
                 continue
@@ -48,16 +65,24 @@ class SherlogDynamo:
 
             for trail in trails['Trails']:
                 trail_arn = trail['TrailARN']
-                event_selectors = cloudtrail.get_event_selectors(
-                    TrailName=trail_arn
-                )
+                event_selectors = []
                 try:
-                    for event_selector in event_selectors['EventSelectors']:
-                        if event_selector['DataResources']:
-                            for data_source in event_selector['DataResources']:
-                                if data_source['Type'] == 'AWS::DynamoDB::Table':
-                                    for value in data_source['Values']:
-                                        tables_arn_in_trail_data_event.append(value)
+                    event_selectors = cloudtrail.get_event_selectors(
+                        TrailName=trail_arn
+                    )
+                except ClientError as error:
+                    self.log.debug("Error ocurred while trying to get metadata from AWS.")
+                    self.log.debug(error)
+                try:
+                    if event_selectors:
+                        for event_selector in event_selectors['EventSelectors']:
+                            if event_selector['DataResources']:
+                                for data_source in event_selector['DataResources']:
+                                    if data_source['Type'] == 'AWS::DynamoDB::Table':
+                                        for value in data_source['Values']:
+                                            tables_arn_in_trail_data_event.append(value)
+                    else:
+                        continue
                 except KeyError as error:
                     self.log.debug('Key Error! '+ error)
                     continue

@@ -9,6 +9,7 @@ import time
 import sys
 
 from botocore.exceptions import ClientError
+from .helpers.all_regions import all_regions
 from .aws_session import AwsSession
 from .sherlog_s3 import SherlogS3
 from .sherlog_rds import SherlogRDS
@@ -24,11 +25,12 @@ class Sherlog:
     Sherlog class initiator
     '''
     
-    def __init__(self, debug, profile, format, output):
+    def __init__(self, debug, profile, format, output, regions):
         # Get available regions list
         self.debug = debug
         self.output = output
         self.format = format
+        self.regions = regions
         self.session=boto3.session.Session(profile_name=profile)
         self.pretty_output = PrettyOutput()
         self.all_results = []
@@ -66,6 +68,25 @@ class Sherlog:
                         policy = s3_result['policy']
                         values.append([name,arn,policy])
                     self.pretty_output.print_results(headers=headers, values=values)
+            if 'dynamodb' in result:
+                headers = ['Name', 'Region', 'arn', 'Policy']
+                if len(result['dynamodb']) == 1:
+                    self.pretty_output.print_color(
+                        header='DynamoDB, Sherlog-2-1',
+                        text="Found one DynamoDB table without audit logs. Consider enabling audit logs on database that contain critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-2-1",
+                        color='yellow'
+                    )
+                else:
+                    self.pretty_output.print_color(
+                        header='DynamoDB, Sherlog-2-1',
+                        text="Found DynamoDB tables without audit logs. Consider enabling audit logs on databases that contain critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-3-1",
+                        color='yellow'
+                    )
+                values = []
+                for dynamo_result in result['dynamodb']:
+                    name, region, arn, policy = dynamo_result['name'], dynamo_result['region'], dynamo_result['arn'], dynamo_result['policy']
+                    values.append([name,region,arn,policy])
+                self.pretty_output.print_results(headers=headers, values=values)
             if 'cloudfront' in result:
                 headers = ['Name', 'arn','Policy']
                 if len(result['cloudfront']) == 1:
@@ -93,42 +114,16 @@ class Sherlog:
                         text="Found one rds instance without audit logs. Consider enabling audit logs on database that contain critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-3-1",
                         color='yellow'
                     )
-                    result = result['rds'][0]
-                    name = result['name']
-                    arn = result['arn']
-                    engine = result['engine']
-                    policy = result['policy']
-                    values = [name, arn, engine, policy]
-                    self.pretty_output.print_results(headers=headers, values=values)
                 else:
                     self.pretty_output.print_color(
                         header='RDS, Sherlog-3-1',
                         text="Found rds instances without audit logs. Consider enabling audit logs on databases that contain critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-3-1",
                         color='yellow'
                     )
-                    values = []
-                    for rds_result in result['rds']:
-                        name, region, arn, engine, policy = rds_result['name'], rds_result['region'], rds_result['arn'],rds_result['engine'], rds_result['policy']
-                        values.append([name,region,arn,engine,policy])
-                    self.pretty_output.print_results(headers=headers, values=values)
-            if 'dynamodb' in result:
-                headers = ['Name', 'Region', 'arn', 'Policy']
-                if len(result['dynamodb']) == 1:
-                    self.pretty_output.print_color(
-                        header='DynamoDB, Sherlog-2-1',
-                        text="Found one DynamoDB table without audit logs. Consider enabling audit logs on database that contain critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-2-1",
-                        color='yellow'
-                    )
-                else:
-                    self.pretty_output.print_color(
-                        header='DynamoDB, Sherlog-2-1',
-                        text="Found DynamoDB tables without audit logs. Consider enabling audit logs on databases that contain critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-3-1",
-                        color='yellow'
-                    )
                 values = []
-                for dynamo_result in result['dynamodb']:
-                    name, region, arn, policy = dynamo_result['name'], dynamo_result['region'], dynamo_result['arn'], dynamo_result['policy']
-                    values.append([name,region,arn,policy])
+                for rds_result in result['rds']:
+                    name, region, arn, engine, policy = rds_result['name'], rds_result['region'], rds_result['arn'],rds_result['engine'], rds_result['policy']
+                    values.append([name,region,arn,engine,policy])
                 self.pretty_output.print_results(headers=headers, values=values)
     
     def animate(self):
@@ -147,6 +142,13 @@ class Sherlog:
         '''
         Main function
         '''
+        if self.regions != "all-regions":
+            available_regions = all_regions()
+            for region in self.regions:
+                if region not in available_regions:
+                    print(f'{region} Unvailable region on AWS. Please provide a correct set of regions if you want to use "--region" option')
+                    sys.exit(1)
+    
         fmt = '%(asctime)s [%(levelname)s] [%(module)s] - %(message)s'
         logging.basicConfig(format=fmt, datefmt='%m/%d/%Y %I:%M:%S')
         log = logging.getLogger('LUCIFER')
@@ -180,9 +182,18 @@ class Sherlog:
             all_results.append({'s3':buckets})
         else:
             log.debug('Everything ok with s3, nothing to report')
-            
+
+        # Inspecting DynamoDB
+        sherlog_dynamodb = SherlogDynamo(log, self.session, self.regions)
+        sherlog_dynamodb.analyze()
+        if sherlog_dynamodb.get_results():
+            dynamo_tables, dynamo_tags, dynamo_associations = sherlog_dynamodb.get_results()
+            resource_tags.append(dynamo_tags)
+            associations.extend(dynamo_associations)
+            all_results.append({'dynamodb':dynamo_tables})
+   
         #Inspecting RDS
-        sherlog_rds = SherlogRDS(log, self.session)
+        sherlog_rds = SherlogRDS(log, self.session, self.regions)
         sherlog_rds.analyze()
         if sherlog_rds.get_results():
             rds_instances, rds_tags, rds_associations = sherlog_rds.get_results()
@@ -198,15 +209,6 @@ class Sherlog:
             resource_tags.append(cf_tags)
             associations.extend(cf_associations)
             all_results.append({'cloudfront':cf_dists})
-            
-        # Inspecting DynamoDB
-        sherlog_dynamodb = SherlogDynamo(log, self.session)
-        sherlog_dynamodb.analyze()
-        if sherlog_dynamodb.get_results():
-            dynamo_tables, dynamo_tags, dynamo_associations = sherlog_dynamodb.get_results()
-            resource_tags.append(dynamo_tags)
-            associations.extend(dynamo_associations)
-            all_results.append({'dynamodb':dynamo_tables})
         
         if all_results:
             self.pretty_output.success()

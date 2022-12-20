@@ -6,17 +6,18 @@ class SherlogRDS:
     '''
     Sherlog class to inspect RDS databases
     '''
-    def __init__(self, log, session):
+    def __init__(self, log, session, regions):
         # Get available regions list
         self.log = log
         self.available_regions = boto3.Session().get_available_regions('rds')
+        self.regions = regions
         self.account_id=session.client('sts').get_caller_identity().get('Account')
         self.session=session
         self.formated_results=[]
         self.associations=[]
         self.resource_tags=[]
         self.has_results=False
-    
+ 
     def get_results(self) -> Tuple[list, list, list]:
         '''
         Geter for results
@@ -26,11 +27,26 @@ class SherlogRDS:
         else:
             return None
 
+    def get_relevant_regions(self):
+        '''
+        Filter selected regions if user used --region option
+        '''
+        resource_regions = []
+        if self.regions == "all-regions":
+            return self.available_regions
+        else:
+            for region in self.regions:
+                if region in self.available_regions:
+                    resource_regions.append(region)
+        return resource_regions
+     
     def analyze(self):
         '''
         Function that will read the logging status of rds instances
         '''
-        for region in self.available_regions:
+        selected_regions = self.get_relevant_regions()
+        rds_instances = []
+        for region in selected_regions:
             rds = self.session.client('rds', region_name=region)
             try:
                 rds_instances = rds.describe_db_instances()
@@ -60,7 +76,6 @@ class SherlogRDS:
                         self.has_results = True
                     except Exception as exception:
                         self.log.error(exception)
-
     
     def format_data(self, rds_name, region, resource_type, tags, arn, engine):
         """

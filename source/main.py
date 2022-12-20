@@ -1,4 +1,5 @@
-import getopt, sys
+import getopt
+import sys
 
 from modules.sherlog_init import Sherlog
 
@@ -45,7 +46,8 @@ def main():
     
     # Main arguments
     profile = None
-    region = "all-regions"
+    has_region = False
+    regions = []
     output = None
     fmt = ""
     debug = False
@@ -53,7 +55,6 @@ def main():
     try:
         # Parsing argument
         arguments, values = getopt.getopt(arguments_list, options, long_options)
-        
         # checking each argument
         if arguments:
             for currentArgument, currentValue in arguments:
@@ -67,27 +68,29 @@ def main():
                         exit()
                 elif currentArgument in ("-r", "--region"):
                     if currentValue:
-                        region = currentValue
-                    else:
-                        region = "all-regions"
+                        has_region=True
+                        regions.append(currentValue)
                 elif currentArgument in ("-j", "--json"):
                     if currentValue:
                         fmt = "JSON"
                 elif currentArgument in ("-d","--debug"):
                     debug = True
                 else:
-                    sys.exit('Please provide an AWS profile and an output')
+                    sys.exit('Please provide an AWS profile')
         else:
             usage()
             sys.exit('Please provide an AWS profile and an output')
         
+        if not has_region:
+            regions=str("all-regions")
+
         if profile:
             print_banner()
             # print(profile)
-            # print(region)
+            # print(regions)
             # print(output)
             # print(str(debug))
-            sherlog = Sherlog(debug=debug, profile=profile, format=fmt, output=output)
+            sherlog = Sherlog(debug=debug, profile=profile, format=fmt, output=output, regions=regions)
             sherlog.init()
         else:
             usage()
