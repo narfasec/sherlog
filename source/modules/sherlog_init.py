@@ -14,6 +14,7 @@ from .sherlog_s3 import SherlogS3
 from .sherlog_rds import SherlogRDS
 from .sherlog_cloudfront import SherlogCF
 from .sherlog_redshift import SherlogRedshift
+from .sherlog_dynamoDB import SherlogDynamo
 from .arango import DBConnection
 from .pretty_output import PrettyOutput
 from .loader import Loader
@@ -92,6 +93,7 @@ class Sherlog:
                         text="Found one rds instance without audit logs. Consider enabling audit logs on database that contain critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-3-1",
                         color='yellow'
                     )
+                    result = result['rds'][0]
                     name = result['name']
                     arn = result['arn']
                     engine = result['engine']
@@ -109,6 +111,25 @@ class Sherlog:
                         name, region, arn, engine, policy = rds_result['name'], rds_result['region'], rds_result['arn'],rds_result['engine'], rds_result['policy']
                         values.append([name,region,arn,engine,policy])
                     self.pretty_output.print_results(headers=headers, values=values)
+            if 'dynamodb' in result:
+                headers = ['Name', 'Region', 'arn', 'Policy']
+                if len(result['dynamodb']) == 1:
+                    self.pretty_output.print_color(
+                        header='DynamoDB, Sherlog-2-1',
+                        text="Found one DynamoDB table without audit logs. Consider enabling audit logs on database that contain critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-2-1",
+                        color='yellow'
+                    )
+                else:
+                    self.pretty_output.print_color(
+                        header='DynamoDB, Sherlog-2-1',
+                        text="Found DynamoDB tables without audit logs. Consider enabling audit logs on databases that contain critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-3-1",
+                        color='yellow'
+                    )
+                values = []
+                for dynamo_result in result['dynamodb']:
+                    name, region, arn, policy = dynamo_result['name'], dynamo_result['region'], dynamo_result['arn'], dynamo_result['policy']
+                    values.append([name,region,arn,policy])
+                self.pretty_output.print_results(headers=headers, values=values)
     
     def animate(self):
         '''
@@ -174,8 +195,18 @@ class Sherlog:
         sherlog_cloudfront.analyze()
         if sherlog_cloudfront.get_results():
             cf_dists, cf_tags, cf_associations = sherlog_cloudfront.get_results()
+            resource_tags.append(cf_tags)
             associations.extend(cf_associations)
             all_results.append({'cloudfront':cf_dists})
+            
+        # Inspecting DynamoDB
+        sherlog_dynamodb = SherlogDynamo(log, self.session)
+        sherlog_dynamodb.analyze()
+        if sherlog_dynamodb.get_results():
+            dynamo_tables, dynamo_tags, dynamo_associations = sherlog_dynamodb.get_results()
+            resource_tags.append(dynamo_tags)
+            associations.extend(dynamo_associations)
+            all_results.append({'dynamodb':dynamo_tables})
         
         if all_results:
             self.pretty_output.success()
@@ -191,10 +222,9 @@ class Sherlog:
                 db_connection.create_association(associations=associations) # pylint: disable=E1101
             else:
                 loader.stop()
-                self.pretty_output.print_color(text='Results here:', color='red')
                 self.print_results(results=all_results)
         
-        return self.pretty_output.print_color(text="Scan finished successfully", color='green')
+        return self.pretty_output.print_color(text="\nScan finished successfully", color='green')
 
 		
 		# Inspecting Redshift #TODO

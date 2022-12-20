@@ -1,6 +1,7 @@
 # Sherlog
 <img src="https://www.clipartmax.com/png/middle/286-2860475_sherlock-holmes-silhouette-chess-knight-icon-png.png" width="250" height="250">
 
+![](https://www.veed.io/view/cbe6a7f8-b5f3-43f9-be3b-7ec4ee6fbcca?panel=share)
 ## Description
 Inspects resources logging status and gives recomendations according to security best practices
 
