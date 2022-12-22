@@ -1,4 +1,3 @@
-![Slack](https://img.shields.io/badge/Slack-4A154B?style=for-the-badge&logo=slack&logoColor=white)
 # Sherlog
 <img src="https://www.clipartmax.com/png/middle/97-976283_sherlock-holmes-icon-sherlock-holmes-icon-png.png" width="150" height="150">
 
@@ -6,10 +5,10 @@
 ## Description
 Sherlog assess the logging gap of an AWS cloud environment. It scans for resources and checks if they are logging according to security best practices. In case it detects resources that are not properly logging, sherlog gives recomendation on how to remidiate them. 
 
-Sherlog will help you tpo reduce the loggin gap on your cloud enviroment!
+Sherlog will help you reducing the loggin gap on your AWS enviroment!
 
 AWS services covered by Sherlog:
-- S3 
+- S3
 - DynamoDB
 - Cloudfront
 - RDS Databases
@@ -52,12 +51,3 @@ Feel free to Open PR's and contribute to sherlog!
 - If you want to add a new feature, open a PR with a branch name starting with **feature:**
 - If you want to fix an issue from *issues*, open a PR with a branch name starting with **fix-issueID:**
 - If you want to fix an issue that is not included in *issues*, simply open a PR with a branch name strating with **fix-new:** and provide a detailed description of the issue found and ideally with the steps to replicate it
-| Variable | Description |
-|----------|-------------|
-| LOG_LEVEL | Log level required by the app |
-| ROLE_NAME | The role name for the app to assume. Must have read only permissions to the services covered by the tool |
-| ACCOUNTS_CONFIGURATION | A list of dicts (passed as string) of the accounts id and external ids used by to assume the role (consider passing it with a secret manager tool). When no external Id is configured in the assume role do not pass it. Example: [{'accountId':'18976838763','externalId':'lkjdalkj/9871lklazdlkKLJldn'},{'accountId':'198719871379'}] |
-| DB_URL | The Arangodb url. Example http://localhost:8529 |
-| DB_NAME | ArangoDB name |
-| DB_USERNAME | Arangodb user name |
-| DB_PASSWORD | Arangodb password (consider passing it with a secret manager tool) |
