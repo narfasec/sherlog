@@ -16,6 +16,7 @@ from .sherlog_rds import SherlogRDS
 from .sherlog_cloudfront import SherlogCF
 from .sherlog_redshift import SherlogRedshift
 from .sherlog_dynamoDB import SherlogDynamo
+from .sherlog_elb import SherlogELB
 from .arango import DBConnection
 from .pretty_output import PrettyOutput
 from .loader import Loader
@@ -125,6 +126,26 @@ class Sherlog:
                     name, region, arn, engine, policy = rds_result['name'], rds_result['region'], rds_result['arn'],rds_result['engine'], rds_result['policy']
                     values.append([name,region,arn,engine,policy])
                 self.pretty_output.print_results(headers=headers, values=values)
+            if 'elb' in result:
+                print('there is an ELB')
+                headers = ['Name', 'Region', 'arn', 'Policy']
+                if len(result['elb']) == 1:
+                    self.pretty_output.print_color(
+                        header='ELBV2, Sherlog-5-1',
+                        text="Found one load balancer without access logs. Consider enabling access logs on elb that handle critical data. See how to enable on https://www.ocotoguard.io/sherlog-5-1",
+                        color='yellow'
+                    )
+                else:
+                    self.pretty_output.print_color(
+                        header='ELBV2, Sherlog-5-1',
+                        text="Found load balancers without access logs. Consider enabling access logs on load balancers that handle critical data. See how to enable on https://www.ocotoguard.io/sherlog-5-1",
+                        color='yellow'
+                    )
+                values = []
+                for elb_result in result['elb']:
+                    name, region, arn, policy = elb_result['name'], elb_result['region'], elb_result['arn'], elb_result['policy']
+                    values.append([name,region,arn,policy])
+                self.pretty_output.print_results(headers=headers, values=values)
     
     def animate(self):
         '''
@@ -209,6 +230,15 @@ class Sherlog:
             resource_tags.append(cf_tags)
             associations.extend(cf_associations)
             all_results.append({'cloudfront':cf_dists})
+        
+        #Inspecting ELBs
+        sherlog_elb = SherlogELB(log, self.session, self.regions)
+        sherlog_elb.analyze()
+        if sherlog_elb.get_results():
+            elb_instances, elb_tags, elb_associations = sherlog_elb.get_results()
+            resource_tags.extend(elb_tags)
+            associations.extend(elb_associations)
+            all_results.append({'elb':elb_instances})
         
         if all_results:
             self.pretty_output.success()
