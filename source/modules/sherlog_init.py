@@ -127,6 +127,7 @@ class Sherlog:
                     values.append([name,region,arn,engine,policy])
                 self.pretty_output.print_results(headers=headers, values=values)
             if 'elb' in result:
+                print('there is an ELB')
                 headers = ['Name', 'Region', 'arn', 'Policy']
                 if len(result['elb']) == 1:
                     self.pretty_output.print_color(

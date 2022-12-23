@@ -12,11 +12,11 @@ AWS services covered by Sherlog:
 - DynamoDB
 - Cloudfront
 - RDS Databases
+- ELBv2
 
 To come:
+- EC2
 - Redshift
-- Lambdas
-- ELBs
 
 ## Setup TODO
 Install with pypi

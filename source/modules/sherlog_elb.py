@@ -40,14 +40,14 @@ class SherlogELB:
                     resource_regions.append(region)
         return resource_regions
     
-    def get_elb_tags(self, client, name) -> list:
+    def get_elb_tags(self, client, arn) -> list:
         '''
         Get tags of given loadbalancer simply returning a dict of filters
         '''
         elbs_tags = client.describe_tags(
-            LoadBalancerNames=[name]
+            ResourceArns=[arn]
         )
-        for elb in elbs_tags:
+        for elb in elbs_tags['TagDescriptions']:
             return elb['Tags']
         
     def analyze(self) -> None:
@@ -79,9 +79,10 @@ class SherlogELB:
                     attributes = elbv2.describe_load_balancer_attributes(LoadBalancerArn=arn)
                     for attribute in attributes['Attributes']:
                         if attribute['Key'] == 'access_logs.s3.enabled' and attribute['Value'] == 'false':
-                            tags = self.get_elb_tags(elb['LoadBalancerName'], elbv2)
+                            self.has_results=True
+                            tags = self.get_elb_tags(elbv2, arn)
                             self.format_data(
-                                elb_name=elbv2['LoadBalancerName'],
+                                elb_name=elb['LoadBalancerName'],
                                 region=region,
                                 tags=tags,
                                 arn=arn
