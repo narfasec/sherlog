@@ -1,0 +1,32 @@
+[
+    {
+        "s3": [
+            {
+                "name": "octoguard-cf-bucket-test", 
+                "rational": "Public Policy", 
+                "service": "s3", 
+                "arn": "arn:aws:s3:::octoguard-cf-bucket-test", 
+                "policy": "sherlog-1-1"
+            }, 
+            {
+                "name": "octoguard-s3-bucket-test", 
+                "rational": "Public Policy", 
+                "service": "s3", 
+                "arn": "arn:aws:s3:::octoguard-s3-bucket-test", 
+                "policy": "sherlog-1-1"
+            }
+        ]
+    },
+    {
+        "cloudfront": [
+            {
+                "name": "E3JUWW300J1QRO", 
+                "rational": "Public Policy", 
+                "accountId": "856960422202", 
+                "service": "cloudfront", 
+                "arn": "arn:aws:cloudfront::856960422202:distribution/E3JUWW300J1QRO", 
+                "policy": "sherlog-4-1"
+            }
+        ]
+    }
+]

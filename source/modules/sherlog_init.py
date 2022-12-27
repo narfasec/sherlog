@@ -176,8 +176,9 @@ class Sherlog:
         if self.debug:
             log.setLevel('DEBUG')
         log.setLevel('INFO')
-        self.pretty_output.print_color(text='Starting sherlog engine', color='green')
-        loader = Loader("Scanning...", "Done!", 0.05).start()
+        if not self.output:
+            self.pretty_output.print_color(text='Starting sherlog engine', color='green')
+            loader = Loader("Scanning...", "Done!", 0.05).start()
         
         
         # Verify credentials
@@ -241,18 +242,10 @@ class Sherlog:
             all_results.append({'elb':elb_instances})
         
         if all_results:
-            self.pretty_output.success()
-            if self.format == 'JSON':
-                #TODO
-                return None
-            if self.format == '--arango':
-                # Populate DB
-                db_connection = DBConnection(log)
-                for result in all_results:
-                    db_connection.list_to_collection(collection='sherlog_resources', list=result) # pylint: disable=E1101
-                    db_connection.list_to_collection(list=resource_tags, collection='resource_tags') # pylint: disable=E1101
-                db_connection.create_association(associations=associations) # pylint: disable=E1101
-            else:
+            if self.output == "json":
+                return print(all_results)
+            if not self.output:
+                self.pretty_output.success()
                 loader.stop()
                 self.print_results(results=all_results)
         

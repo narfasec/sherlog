@@ -21,14 +21,13 @@ def create_output(output):
     '''
 def usage():
     print("usage:")
-    print("\tpython3 main.py --profile <profile> [options]")
+    print("\sherlog main.py --profile <profile> [options]")
 
 def help():
-    print("usage:")
-    print("\tpython3 init.py --profile <profile> [options]")
+    usage()
     print("\n\t-p, --profile:	AWS profile: ")
     print("\nOptions:")
-    print("\t-j, --json: output has json file, provide filename")
+    print("\t-j, --json: choose json output")
     print("\t-r, --region:	AWS region")
     print("\t-d, --debug:	enable dubug mode")
     exit()
@@ -39,10 +38,10 @@ def main():
     arguments_list = sys.argv[1:]
     
     # Options
-    options = "hp:r:j:d"
+    options = "hp:r:jd"
     
     # Long options
-    long_options = ["help", "profile=","region=", "json=", "debug"]
+    long_options = ["help", "profile=","region=", "json", "debug"]
     
     # Main arguments
     profile = None
@@ -71,8 +70,7 @@ def main():
                         has_region=True
                         regions.append(currentValue)
                 elif currentArgument in ("-j", "--json"):
-                    if currentValue:
-                        fmt = "JSON"
+                    output = "json"
                 elif currentArgument in ("-d","--debug"):
                     debug = True
                 else:
@@ -85,7 +83,8 @@ def main():
             regions=str("all-regions")
 
         if profile:
-            print_banner()
+            if not output:
+                print_banner()
             # print(profile)
             # print(regions)
             # print(output)
