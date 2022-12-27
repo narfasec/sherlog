@@ -1,10 +1,11 @@
 '''
-slds
+Pretty Output
 '''
 from tabulate import tabulate # pylint: disable=E0401
 
 class PrettyOutput:
     '''
+    Class to allow other modules print colorful messages
     '''
     def __init__(self):
         self.HEADER = '\033[95m'
@@ -16,20 +17,7 @@ class PrettyOutput:
         self.ENDC = '\033[0m'
         self.BOLD = '\033[1m'
         self.UNDERLINE = '\033[4m'
-    
-        
-    def print_banner(self):
-        '''
-        '''
-        # Banner by https://manytools.org/hacker-tools/ascii-banner/
-        print("\n███████╗██╗  ██╗███████╗██████╗ ██╗      ██████╗  ██████╗ ")
-        print("██╔════╝██║  ██║██╔════╝██╔══██╗██║     ██╔═══██╗██╔════╝ ")
-        print("███████╗███████║█████╗  ██████╔╝██║     ██║   ██║██║  ███╗")
-        print("╚════██║██╔══██║██╔══╝  ██╔══██╗██║     ██║   ██║██║   ██║")
-        print("███████║██║  ██║███████╗██║  ██║███████╗╚██████╔╝╚██████╔╝")
-        print("╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝  ╚═════╝ ")
-        print("                                              by Octoguard")
-    
+ 
     def success(self, text='Sherlog has found AWS resources that are not logging according to security best practices.'):
         '''
         Print success message

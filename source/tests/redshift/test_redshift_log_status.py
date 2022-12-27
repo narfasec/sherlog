@@ -3,7 +3,7 @@ Unit tests for Redshift
 '''
 import json
 import logging
-from source.modules.sherlog_redshift import SherlogRedshift
+from Sherlog.source.modules.aws.redshift import SherlogRedshift
 
 def load_data():
     '''

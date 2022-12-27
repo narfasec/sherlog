@@ -15,7 +15,6 @@ class SherlogRedshift:
         self.log = log
         self.account_id=account_id
         self.formated_results=[]
-        self.associations=[]
         self.resource_tags=[]
         self.has_results=False
 
@@ -43,7 +42,7 @@ class SherlogRedshift:
         Geter for results
         '''
         if self.has_results:
-            return self.formated_results, self.resource_tags, self.associations
+            return self.formated_results, self.resource_tags
         else:
             return None
         
@@ -96,10 +95,5 @@ class SherlogRedshift:
             {
                 "arn":f"{self.account_id}/tags/{arn}",
                 "tags":tags
-            })
-        self.associations.append(
-            {
-                "parentId":arn,
-                "childId":f"{self.account_id}/tags/{arn}"
             }
         )

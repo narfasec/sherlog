@@ -14,7 +14,6 @@ class SherlogRDS:
         self.account_id=session.client('sts').get_caller_identity().get('Account')
         self.session=session
         self.formated_results=[]
-        self.associations=[]
         self.resource_tags=[]
         self.has_results=False
  
@@ -23,7 +22,7 @@ class SherlogRDS:
         Geter for results
         '''
         if self.has_results:
-            return self.formated_results, self.resource_tags, self.associations
+            return self.formated_results, self.resource_tags
         else:
             return None
 
@@ -96,11 +95,6 @@ class SherlogRDS:
             {
                 "arn":f"{self.account_id}/tags/{arn}",
                 "tags":tags
-            })
-        self.associations.append(
-            {
-                "parentId":arn,
-                "childId":f"{self.account_id}/tags/{arn}"
             }
         )
 
