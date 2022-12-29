@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sherlog"
+description = "Sherlog assess the logging gap of an AWS cloud environment. It scans for resources and checks if they are logging according to security best practices. In case it detects resources that are not properly logging, sherlog gives recomendation on how to remidiate them."
+license = {text = "MIT"}
+requires-python = ">=3.7"
+version = "0.0.2"
+dependencies = [
+    "boto3",
+    "tabulate",
+]
+
+[tool.setuptools]
+package-dir = {"" = "source"}
+
+[project.scripts]
+sherlog = "main:main"
