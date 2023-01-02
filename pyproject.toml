@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-package-dir = {"" = "source"}
+package-dir = {"\"" = "source"}
 
 [project.scripts]
 sherlog = "main:main"
