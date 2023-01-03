@@ -17,8 +17,6 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-readme = "README.md"
-
 [tool.setuptools]
 package-dir = {"" = "source"}
 
