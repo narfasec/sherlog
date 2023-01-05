@@ -23,8 +23,9 @@ class Sherlog:
     Sherlog class initiator
     '''
 
-    def __init__(self, debug, profile, output, regions):
+    def __init__(self, debug, profile, output, regions, check_retention):
         # Get available regions list
+        self.check_retention = check_retention
         self.debug = debug
         self.output = output
         self.regions = regions
@@ -78,7 +79,7 @@ class Sherlog:
         resource_tags=[]
         all_results = []
         resource_modules = [
-            SherlogS3(log, self.session, self.regions),
+            SherlogS3(log, self.session, self.regions, self.check_retention),
             SherlogDynamo(log, self.session, self.regions),
             SherlogRDS(log, self.session, self.regions),
             SherlogCF(log, self.session),
