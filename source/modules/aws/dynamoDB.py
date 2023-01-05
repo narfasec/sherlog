@@ -7,9 +7,10 @@ class SherlogDynamo:
     '''
     Sherlog class to inspect RDS databases
     '''
-    def __init__(self, log, session, regions):
+    def __init__(self, log, session, regions, check_retention):
         # Get available regions list
         self.log = log
+        self.check_retention = check_retention
         self.available_regions = boto3.Session().get_available_regions('dynamodb')
         self.regions = regions
         self.account_id=session.client('sts').get_caller_identity().get('Account')
@@ -17,6 +18,11 @@ class SherlogDynamo:
         self.formated_results=[]
         self.resource_tags=[]
         self.has_results=False
+    
+    def get_module_name(self) -> str:
+        '''
+        '''
+        return 'dynamodb'
     
     def get_results(self) -> Tuple[list, list, list]:
         '''
@@ -83,7 +89,7 @@ class SherlogDynamo:
                     else:
                         continue
                 except KeyError as error:
-                    self.log.debug('Key Error! '+ error)
+                    self.log.debug('Key Error! '+ str(error))
                     continue
         
             paginator = dynamodb.get_paginator('list_tables')

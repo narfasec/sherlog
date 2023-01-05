@@ -17,14 +17,30 @@ class SherlogS3:
         self.account_id = session.client('sts').get_caller_identity().get('Account')
         self.available_regions = boto3.Session().get_available_regions('s3')
         self.formated_results = []
+        self.results_policy_1 = []
+        self.results_policy_2 = []
         self.resource_tags=[]
         self.has_results=False
+
+    def get_module_name(self) -> str:
+        '''
+        Getter for service/module name
+        '''
+        return 's3'
 
     def get_results(self) -> Tuple[list, list, list]:
         '''
         Geter for results
         '''
         if self.has_results:
+            policies = ['sherlog-1-1', 'sherlog-1-2']
+            policies_list = {
+                'sherlog-1-1': self.results_policy_1,
+                'sherlog-1-2': self.results_policy_2
+            }
+            for policy in policies:
+                self.formated_results.append({policy:policies_list[policy]})
+            self.log.debug('Results: %s', str(self.formated_results))
             return self.formated_results, self.resource_tags
         else:
             return None
@@ -38,35 +54,25 @@ class SherlogS3:
         if self.get_buckets():
             buckets = self.get_buckets()
         for bucket in buckets['Buckets']:
-            result = {}
             try:
                 result = self.get_bucket_logging_of_s3(bucket["Name"])["LoggingEnabled"]
-                print(result)
                 logging = True
             except KeyError:
                 logging = False
             except Exception as error:
                 self.log.error(error)
-                
+            self.log.debug("Analysing S3: %s",bucket['Name'])
             if not logging:
-                print(logging)
-                self.has_results=True
-                name = bucket["Name"]
-                arn = f"arn:aws:s3:::{name}"
-                tags = {}
-                try:
-                    tags = self.session.client('s3').get_bucket_tagging(Bucket=name)
-                except KeyError:
-                    self.log.error('Name bucket not found when getting the tags')
-                except ClientError as error:
-                    if 'NoSuchTagSet' not in str(error):
-                        self.log.error(error)
-                except Exception as error:
-                    self.log.error(error)
-                self.format_data(name=name, tags=tags, arn=arn, policy='sherlog-1-1')
-            elif self.retention_check:
-                print('Retention check')
-                self.evaluate_retention_period(result)
+                if not self.is_target_bucket(bucket["Name"]):
+                    self.log.debug('%s is not loging and it is not a target bucket. Adding to fidings results', bucket["Name"])
+                    self.has_results=True
+                    name = bucket["Name"]
+                    arn = f"arn:aws:s3:::{name}"
+                    comments = ["Access logs are not enabled! Consider enable logs on S3 bucket if it contains critical data"]
+                    tags = self.get_tags(name)
+                    self.format_data(name=name, tags=tags, arn=arn, policy='sherlog-1-1', comments=comments)
+                elif self.retention_check:
+                    self.evaluate_retention_period(name=bucket["Name"])
 
     def get_buckets(self) -> dict:
         '''
@@ -93,32 +99,51 @@ class SherlogS3:
             self.log.error("Unexpected error in get_bucket_logging_of_s3 function: " + str(excp))
         return None
 
-    def evaluate_retention_period(self, bucket):
+    def is_target_bucket(self, bucket) -> bool:
+        '''
+        Function to check if bucket is receiving logs by analysing it's policy
+        '''
+        log_services = [
+            "logging.s3.amazonaws.com",
+            "logdelivery.elb.amazonaws.com",
+            "logdelivery.elasticloadbalancing.amazonaws.com",
+            "arn:aws:iam::127311923021:root" # TODO Must check all available ids https://docs.aws.amazon.com/elasticloadbalancing/latest/application/enable-access-logging.html#enable-access-logs
+        ]
+        try:
+            policy = self.session.client('s3').get_bucket_policy(Bucket=bucket)['Policy']
+            for l_service in log_services:
+                result = policy.find(l_service)
+                if result:
+                    self.log.debug("Target bucket confirmed")
+                    return True
+        except ClientError:
+            return False
+
+    def evaluate_retention_period(self, name):
         '''
         Function that analyzes the retention period of the target bucket
         '''
         recommendations = []
-        arn = ""
         tags = {}
         no_life_cycle_error = 'An error occurred (NoSuchLifecycleConfiguration) when calling the GetBucketLifecycleConfiguration operation: The lifecycle configuration does not exist'
         result = None
-        name = bucket['TargetBucket']
+        arn = f"arn:aws:s3:::{name}"
         try:
             result = self.session.client('s3').get_bucket_lifecycle_configuration(
                 Bucket=name
             )
         except ClientError as error:
+            # self.log.error(error)
             if str(error) == no_life_cycle_error:
                 recommendations.append('No lifeCycle! Consider enabling a lifecycle to reduce costs on this target bucket. Check the reccomendation on:')
 
         if result:
-            print(result)
             transition_to_ia = False
             transition_to_glacier = False
             one_year_expiration = False
             no_expiration = False
             all_rules_disabled = True
-            tags = self.session.client('s3').get_bucket_tagging(Bucket=name)
+            tags = self.get_tags(name)
             arn = f"arn:aws:s3:::{name}"
             for rule in result['Rules']:
                 if rule['Status'] == 'Enabled':
@@ -133,8 +158,9 @@ class SherlogS3:
                         expiration = rule['Expiration']
                     except KeyError:
                         no_expiration = True
-                    if expiration['Days'] >= 365:
-                        one_year_expiration = True
+                    if not no_expiration:
+                        if expiration['Days'] >= 365:
+                            one_year_expiration = True
             if not all_rules_disabled:
                 if not transition_to_ia:
                     recommendations.append("Objects from the original bucket should transit to 'STANDARD IA' after 30 days")
@@ -142,27 +168,45 @@ class SherlogS3:
                     recommendations.append("Objects from 'STANDARD IA' bucket should transit to 'GLACIER' after 60 days")
                 if no_expiration:
                     recommendations.append("No expire configuration was found. Consider activating an expiration for at least 365 days. This way, logs are kept for auditing and costs are reduced")
-                if not one_year_expiration:
+                elif not one_year_expiration:
                     recommendations.append("Consider to increase the expiration for at least 365 days")
             else:
                 recommendations.append('Enable lifecycle rules for better management of objects and to reduce costs')
-        self.format_data(name=bucket['TargetBucket'], tags=tags, arn=arn, policy="sherlog-1-2", recomendations=recommendations)
-     
-    def format_data(self, name, tags, arn, policy, recomendations=""):
+        if recommendations:
+            self.has_results = True
+            self.format_data(name=name, tags=tags, arn=arn, policy="sherlog-1-2", comments=recommendations)
+    
+    def get_tags(self, bucket) -> dict:
+        '''
+        Function to get tags from bucket
+        '''
+        try:
+            return self.session.client('s3').get_bucket_tagging(Bucket=bucket)
+        except KeyError:
+            self.log.error('Name bucket not found when getting the tags')
+            return {}
+        except ClientError as error:
+            if 'NoSuchTagSet' not in str(error):
+                return {}
+        except Exception as error:
+            self.log.error(error)
+            return {}
+                
+
+    def format_data(self, name, tags, arn, policy, comments):
         """
         Format data in json
         """
-        self.formated_results.append({
+        self.log.debug('Formatting finding for %s with %s', name, policy)
+        policies_list = {
+            'sherlog-1-1': self.results_policy_1,
+            'sherlog-1-2': self.results_policy_2
+        }
+        policies_list[policy].append({
             "name":name,
             "rational":"Public Policy",
             "service":"s3",
             "arn":arn,
-            "policy":policy,
-            "recommendations":recomendations
+            "comments":comments,
+            "tags":tags
         })
-        self.resource_tags.append(
-            {
-                "arn":f"{self.account_id}/tags/{arn}",
-                "tags":tags
-            }
-        )

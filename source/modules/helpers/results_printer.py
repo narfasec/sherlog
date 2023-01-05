@@ -11,29 +11,30 @@ class ResultsPrinter:
             '''
             Function to format the output in the console
             '''
-            print(results)
             for result in results:
                 if 's3' in result:
-                    headers = ['Bucket', 'arn', 'Policy']
-                    if len(result['s3']) == 1:
-                        self.pretty_output.print_color(
-                            header='S3, Sherlog-1-1',
-                            text="Found one s3 bucket without access logs. Consider enabling access logs on buckets that contain critical information to audit every resquest. See how to enable on https://www.ocotoguard.io/sherlog-1-1",
-                            color='yellow'
-                        )
-                    else:
-                        self.pretty_output.print_color(
-                            header='S3, Sherlog-1-1',
-                            text="Found s3 buckets without access logs. Consider enabling access logs on buckets that contain critical information to audit every resquest. See how to enable on https://www.ocotoguard.io/sherlog-1-1",
-                            color='yellow'
-                        )
-                    values = []
                     for s3_result in result['s3']:
-                        name = s3_result['name']
-                        arn = s3_result['arn']
-                        policy = s3_result['policy']
-                        values.append([name,arn,policy])
-                    self.pretty_output.print_results(headers=headers, values=values)
+                        policy = ""
+                        for key, value in s3_result.items():
+                            policy = key
+                        self.pretty_output.print_color(
+                            header=policy,
+                            text=""
+                        )
+                        for policy_result in s3_result[policy]:
+                            name = policy_result['name']
+                            arn = policy_result['arn']
+                            comments = policy_result['comments']
+                            text = "Bucket: "+policy_result['name']
+                            self.pretty_output.print_color(text=text, color="blue")
+                            print("Arn: "+policy_result['arn'])
+                            if len(comments) > 1:
+                                print("Comments:")
+                                for comment in comments:
+                                    print("\t-"+comment)
+                            else:
+                                print("Comments: "+comments[0])
+                            print("")
                 if 'dynamodb' in result:
                     headers = ['Name', 'Region', 'arn', 'Policy']
                     if len(result['dynamodb']) == 1:

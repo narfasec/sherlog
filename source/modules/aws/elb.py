@@ -16,7 +16,13 @@ class SherlogELB:
         self.formated_results=[]
         self.resource_tags=[]
         self.has_results=False
- 
+        
+    def get_module_name(self) -> str:
+        '''
+        Getter for service/module name
+        '''
+        return 'elbv2'
+    
     def get_results(self) -> Tuple[list, list, list]:
         '''
         Geter for results

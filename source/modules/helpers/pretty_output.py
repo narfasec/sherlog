@@ -57,5 +57,6 @@ class PrettyOutput:
         print(tabulate(
             values,
             headers=headers,
-            tablefmt='orgtbl')
+            tablefmt="plain"
+            )
         )

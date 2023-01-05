@@ -62,9 +62,10 @@ class Sherlog:
         log = logging.getLogger('LUCIFER')
         if self.debug:
             log.setLevel('DEBUG')
-        log.setLevel('INFO')
-        if not self.output:
-            self.pretty_output.print_color(text='Starting sherlog engine', color='green')
+        else:
+            log.setLevel('INFO')
+        self.pretty_output.print_color(text='Starting sherlog engine', color='green')
+        if not self.output and not self.debug:
             loader = Loader("Scanning...", "Done!", 0.05).start()
    
         # Verify credentials
@@ -80,25 +81,30 @@ class Sherlog:
         all_results = []
         resource_modules = [
             SherlogS3(log, self.session, self.regions, self.check_retention),
-            SherlogDynamo(log, self.session, self.regions),
-            SherlogRDS(log, self.session, self.regions),
-            SherlogCF(log, self.session),
-            SherlogELB(log, self.session, self.regions)
+            SherlogDynamo(log, self.session, self.regions, self.check_retention),
+            # SherlogRDS(log, self.session, self.regions),
+            # SherlogCF(log, self.session),
+            # SherlogELB(log, self.session, self.regions)
         ]
 
         for module in resource_modules:
             module.analyze()
-            if module.get_results():
+            if module.has_results:
                 results, tags = module.get_results()
                 resource_tags.extend(tags)
-                all_results.append({results[0]['service']:results})
+                module_name = module.get_module_name()
+                log.debug("Finalizing assessment on: %s", module_name)
+                all_results.append({module_name:results})
 
         if all_results:
             if self.output == "json":
                 return print(all_results)
             if not self.output:
+                log.debug("Printing results on the console")
+                log.debug(all_results)
                 self.pretty_output.success()
-                loader.stop()
+                if not self.debug:
+                    loader.stop()
                 printer = ResultsPrinter(self.pretty_output)
                 printer.print_results(results=all_results)
 
