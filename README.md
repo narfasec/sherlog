@@ -50,9 +50,9 @@ In case you want you to have an overview of what results are expectted feel free
 ## Credits
 
 Octoguard team:
-    - narfasec
-    - 9rnt
-    - franciscopalma
+ - narfasec
+ - 9rnt
+ - franciscopalma
 
 ## Collaborate
 Feel free to Open PR's and contribute to sherlog!
