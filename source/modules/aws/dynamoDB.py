@@ -21,6 +21,7 @@ class SherlogDynamo:
     
     def get_module_name(self) -> str:
         '''
+        Getter for module/service name
         '''
         return 'dynamodb'
     

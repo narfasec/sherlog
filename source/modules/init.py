@@ -82,7 +82,7 @@ class Sherlog:
         resource_modules = [
             SherlogS3(log, self.session, self.regions, self.check_retention),
             SherlogDynamo(log, self.session, self.regions, self.check_retention),
-            # SherlogRDS(log, self.session, self.regions),
+            SherlogRDS(log, self.session, self.regions, self.check_retention),
             # SherlogCF(log, self.session),
             # SherlogELB(log, self.session, self.regions)
         ]

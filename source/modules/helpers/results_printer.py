@@ -74,24 +74,32 @@ class ResultsPrinter:
                         values.append([name,arn,policy])
                     self.pretty_output.print_results(headers=headers, values=values)
                 if 'rds' in result:
-                    headers = ['Name', 'Region', 'arn','Engine', 'Policy']
-                    if len(result['rds']) == 1:
+                    for s3_result in result['rds']:
+                        policy = ""
+                        for key, value in s3_result.items():
+                            policy = key
                         self.pretty_output.print_color(
-                            header='RDS, Sherlog-3-1',
-                            text="Found one rds instance without audit logs. Consider enabling audit logs on database that contain critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-3-1",
-                            color='yellow'
+                            header=policy,
+                            text=""
                         )
-                    else:
-                        self.pretty_output.print_color(
-                            header='RDS, Sherlog-3-1',
-                            text="Found rds instances without audit logs. Consider enabling audit logs on databases that contain critical information to audit every operation. See how to enable on https://www.ocotoguard.io/sherlog-3-1",
-                            color='yellow'
-                        )
-                    values = []
-                    for rds_result in result['rds']:
-                        name, region, arn, engine, policy = rds_result['name'], rds_result['region'], rds_result['arn'],rds_result['engine'], rds_result['policy']
-                        values.append([name,region,arn,engine,policy])
-                    self.pretty_output.print_results(headers=headers, values=values)
+                        for policy_result in s3_result[policy]:
+                            name = policy_result['name']
+                            arn = policy_result['arn']
+                            region = policy_result['region']
+                            engine = policy_result['engine']
+                            comments = policy_result['comments']
+                            text = "RDS: "+policy_result['name']
+                            self.pretty_output.print_color(text=text, color="blue")
+                            print("Arn: "+policy_result['arn'])
+                            print('Region: '+region)
+                            print('Engine: '+engine)
+                            if len(comments) > 1:
+                                print("Comments:")
+                                for comment in comments:
+                                    print("\t-"+comment)
+                            else:
+                                print("Comments: "+comments[0])
+                            print("")
                 if 'elbv2' in result:
                     print('there is an ELB')
                     headers = ['Name', 'Region', 'arn', 'Policy']
