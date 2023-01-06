@@ -32,23 +32,12 @@ class Sherlog:
         self.session=boto3.session.Session(profile_name=profile)
         self.pretty_output = PrettyOutput()
         self.all_results = []
+        self.target_buckets = []
         self.done = False
-
-    def animate(self):
-        '''
-        Simple animation to create a loader during sherlog processing
-        '''
-        for c in itertools.cycle(["⢿", "⣻", "⣽", "⣾", "⣷", "⣯", "⣟", "⡿"]):
-            if self.done:
-                break
-            sys.stdout.write('\rloading ' + c +' ')
-            sys.stdout.flush()
-            time.sleep(0.1)
-        sys.stdout.write('\rDone!     ')
     
     def init(self):
         '''
-        Main function
+        Function thay initializes sherlog engine
         '''
         if self.regions != "all-regions":
             available_regions = all_regions()
@@ -77,25 +66,33 @@ class Sherlog:
             self.pretty_output.print_color(text='Check if your AWS credentials are updated', color='red')
             exit(1)
 
+        # Listing all AWS modules available in Sherlog
         resource_tags=[]
         all_results = []
         resource_modules = [
-            SherlogS3(log, self.session, self.regions, self.check_retention),
             SherlogDynamo(log, self.session, self.regions, self.check_retention),
             SherlogRDS(log, self.session, self.regions, self.check_retention),
-            # SherlogCF(log, self.session),
-            # SherlogELB(log, self.session, self.regions)
+            SherlogCF(log, self.session, self.check_retention),
+            SherlogELB(log, self.session, self.regions, self.check_retention),
+            SherlogS3(log, self.session, self.regions, self.check_retention, self.target_buckets)
         ]
 
+        # Start anaysing each module, S3 is the last one because it depends on other modules to get the target buckets (they can be empty)
         for module in resource_modules:
             module.analyze()
             if module.has_results:
                 results, tags = module.get_results()
                 resource_tags.extend(tags)
                 module_name = module.get_module_name()
-                log.debug("Finalizing assessment on: %s", module_name)
+                if module_name in ['elbv2', 'cloudfront']:
+                    t_buckets = module.get_target_buckets()
+                    if t_buckets:
+                        for t_bucket in t_buckets:
+                            self.target_buckets.append(t_bucket)
+                log.debug("Evaluation finnished on: %s", module_name)
                 all_results.append({module_name:results})
 
+        # Finalizing Sherlog with output option
         if all_results:
             if self.output == "json":
                 return print(all_results)

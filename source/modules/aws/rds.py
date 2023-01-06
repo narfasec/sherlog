@@ -140,6 +140,7 @@ class SherlogRDS:
             "resourceType":resource_type,
             "engine":engine,
             "arn":arn,
+            "policy":policy,
             "comments":comments,
             "tags":tags
         })

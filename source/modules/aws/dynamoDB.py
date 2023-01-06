@@ -16,6 +16,8 @@ class SherlogDynamo:
         self.account_id=session.client('sts').get_caller_identity().get('Account')
         self.session=session
         self.formated_results=[]
+        self.results_policy_1 = []
+        self.results_policy_2 = []
         self.resource_tags=[]
         self.has_results=False
     
@@ -30,6 +32,14 @@ class SherlogDynamo:
         Geter for results
         '''
         if self.has_results:
+            policies = ['sherlog-2-1', 'sherlog-2-2']
+            policies_list = {
+                'sherlog-2-1': self.results_policy_1,
+                'sherlog-2-2': self.results_policy_2
+            }
+            for policy in policies:
+                self.formated_results.append({policy:policies_list[policy]})
+            self.log.debug('Results: %s', str(self.formated_results))
             return self.formated_results, self.resource_tags
         else:
             return None
@@ -112,19 +122,27 @@ class SherlogDynamo:
                         tables_arn_without_logging.append(arn)
                         table_name = arn.split("/",1)[1]
                         tags = dynamodb.list_tags_of_resource(ResourceArn=arn)
-                        self.format_data(table_name, region, 'table', tags, arn)
+                        comments = ['Dynamodb table without audit logs. Consider enabling it for auditing purposes. https://aws.amazon.com/blogs/database/amazon-dynamodb-now-supports-audit-logging-and-monitoring-using-aws-cloudtrail/']
+                        self.format_data(db_name=table_name, region=region, resource_type='table', tags=tags, arn=arn, policy='sherlog-2-1', comments=comments)
+                    elif self.check_retention:
+                        #TODO Unable to configure dynamdb audit logs due to limitation of AWS account used for testing 
+                        continue
             
             # if not tables_arn_in_trail_data_event:
             #     return 'There are no Data Events of type: DynamoDB'
             # else:
             #     return{region:{'dynamoDB_tables_with_logs':tables_arn_in_trail_data_event, 'dynamoDB_tables_without_logs':tables_arn_without_logging}}
 
-    
-    def format_data(self, db_name, region, resource_type, tags, arn):
+    def format_data(self, db_name, tags, resource_type, arn, region, policy, comments):
         """
-        Format data to insert on DB
+        Format data for results findings
         """
-        self.formated_results.append({
+        self.log.debug('Formatting finding for %s with %s', db_name, policy)
+        policies_list = {
+            'sherlog-2-1': self.results_policy_1,
+            'sherlog-2-2': self.results_policy_2
+        }
+        policies_list[policy].append({
             "name":db_name,
             "rational":"Public Policy",
             "accountId":self.account_id,
@@ -132,11 +150,7 @@ class SherlogDynamo:
             "service":"dynamodb",
             "resourceType":resource_type,
             "arn":arn,
-            "policy":"sherlog-2-1"
+            "policy":policy,
+            "comments":comments,
+            "tags": tags
         })
-        self.resource_tags.append(
-            {
-                "arn":f"{self.account_id}/tags/{arn}",
-                "tags":tags
-            }
-        )

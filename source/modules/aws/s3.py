@@ -8,12 +8,13 @@ class SherlogS3:
     '''
     Sherlog class to inspect S3 buckets
     '''
-    def __init__(self, log, session, regions, retention_check):
+    def __init__(self, log, session, regions, retention_check, target_buckets):
         # Get available regions list
         self.log = log
         self.session = session
         self.regions = regions
         self.retention_check = retention_check
+        self.target_buckets = target_buckets
         self.account_id = session.client('sts').get_caller_identity().get('Account')
         self.available_regions = boto3.Session().get_available_regions('s3')
         self.formated_results = []
@@ -103,21 +104,10 @@ class SherlogS3:
         '''
         Function to check if bucket is receiving logs by analysing it's policy
         '''
-        log_services = [
-            "logging.s3.amazonaws.com",
-            "logdelivery.elb.amazonaws.com",
-            "logdelivery.elasticloadbalancing.amazonaws.com",
-            "arn:aws:iam::127311923021:root" # TODO Must check all available ids https://docs.aws.amazon.com/elasticloadbalancing/latest/application/enable-access-logging.html#enable-access-logs
-        ]
-        try:
-            policy = self.session.client('s3').get_bucket_policy(Bucket=bucket)['Policy']
-            for l_service in log_services:
-                result = policy.find(l_service)
-                if result:
-                    self.log.debug("Target bucket confirmed")
-                    return True
-        except ClientError:
-            return False
+        self.log.debug('Target buckets received: %s', str(self.target_buckets))
+        if bucket in self.target_buckets:
+            return True
+        return False
 
     def evaluate_retention_period(self, name):
         '''
@@ -135,7 +125,7 @@ class SherlogS3:
         except ClientError as error:
             # self.log.error(error)
             if str(error) == no_life_cycle_error:
-                recommendations.append('No lifeCycle! Consider enabling a lifecycle to reduce costs on this target bucket. Check the reccomendation on:')
+                recommendations.append('No lifeCycle! Consider enabling a lifecycle to reduce costs on this target bucket. Check the reccomendation on:https://medium.com/avmconsulting-blog/aws-s3-lifecycle-management-1ed2f67c3b73')
 
         if result:
             transition_to_ia = False
@@ -191,7 +181,6 @@ class SherlogS3:
         except Exception as error:
             self.log.error(error)
             return {}
-                
 
     def format_data(self, name, tags, arn, policy, comments):
         """
@@ -205,8 +194,10 @@ class SherlogS3:
         policies_list[policy].append({
             "name":name,
             "rational":"Public Policy",
+            "accountId":self.account_id,
             "service":"s3",
             "arn":arn,
+            "policy":policy,
             "comments":comments,
             "tags":tags
         })
