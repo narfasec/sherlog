@@ -1,5 +1,4 @@
 # Sherlog
-<img src="https://www.clipartmax.com/png/middle/97-976283_sherlock-holmes-icon-sherlock-holmes-icon-png.png" width="150" height="150">
 
 ![](assets/sherlog.gif)
 ## Description
