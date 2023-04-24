@@ -29,6 +29,7 @@ def print_help():
     '''
     usage()
     print("\n\t-p, --profile: If AWS profile is not given, default profile will be used ")
+    print("\t-a, --assume: ARN of AWS role to be assumed ")
     print("\nOptions:")
     print("\t-j, --json: choose json output")
     print("\t-r, --region: AWS region (e.g. us-east-1), default will run for all available regions ")
@@ -45,13 +46,14 @@ def main():
     arguments_list = sys.argv[1:]
     
     # Options
-    options = "hp:r:jd"
+    options = "hp:r:ja:d"
     
     # Long options
-    long_options = ["help", "profile=","region=", "json", "debug", "retention"]
+    long_options = ["help", "profile=","region=", "json", "assume=", "debug", "retention"]
     
     # Main arguments
     profile = None
+    assume_role = None
     has_region = False
     regions = []
     output = None
@@ -75,6 +77,9 @@ def main():
                         regions.append(current_value)
                 elif current_argument in ("-j", "--json"):
                     output = "json"
+                elif current_argument in ("-a", "--assume"):
+                    if current_value:
+                        assume_role = current_value
                 elif current_argument in ("-d","--debug"):
                     debug = True
                 elif current_argument in ("--retention"):
@@ -83,11 +88,12 @@ def main():
                     sys.exit('Please provide an AWS profile')
         if not has_region:
             regions=str("all-regions")
-        if not profile:
+        if not profile and not assume_role:
             profile = "default"
         if not output:
             print_banner()
-        sherlog = Sherlog(debug=debug, profile=profile, output=output, regions=regions, check_retention=check_retention)
+        print(assume_role)
+        sherlog = Sherlog(debug=debug, profile=profile, output=output, assume_role=assume_role, regions=regions, check_retention=check_retention)
         sherlog.init()
     
     except getopt.error as err:
