@@ -1,7 +1,6 @@
 '''
 Pretty Output
 '''
-from tabulate import tabulate # pylint: disable=E0401
 
 class PrettyOutput:
     '''
@@ -49,14 +48,3 @@ class PrettyOutput:
             print(self.FAIL+text+self.ENDC)
         else:
             print(text)
-        
-    def print_results(self, headers, values, color=None):
-        '''
-        print with colors
-        '''
-        print(tabulate(
-            values,
-            headers=headers,
-            tablefmt="plain"
-            )
-        )
