@@ -23,13 +23,14 @@ class Sherlog:
     Sherlog class initiator
     '''
 
-    def __init__(self, debug, profile, output, regions, check_retention):
+    def __init__(self, debug, profile, output, regions, assume_role, check_retention):
         # Get available regions list
         self.check_retention = check_retention
         self.debug = debug
         self.output = output
         self.regions = regions
         self.session=boto3.session.Session(profile_name=profile)
+        self.assume_role = None if assume_role is None else self.session.client('sts').assume_role(RoleArn=assume_role,RoleSessionName='octo-session')
         self.pretty_output = PrettyOutput()
         self.all_results = []
         self.target_buckets = []
@@ -70,7 +71,7 @@ class Sherlog:
         resource_tags=[]
         all_results = []
         resource_modules = [
-            SherlogDynamo(log, self.session, self.regions, self.check_retention),
+            # SherlogDynamo(log, self.session, self.regions, self.check_retention),
             SherlogRDS(log, self.session, self.regions, self.check_retention),
             SherlogCF(log, self.session, self.check_retention),
             SherlogELB(log, self.session, self.regions, self.check_retention),
