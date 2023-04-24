@@ -107,7 +107,7 @@ class Sherlog:
                 now = datetime.now()
                 if not os.path.isdir("output"):
                     os.mkdir("output/")
-                output_file = f'output/results_{now}'
+                output_file = f'output/results_{now}.json'
                 with open(output_file, "w+") as outfile:
                     json.dump(all_results, outfile)
             if not self.output:
