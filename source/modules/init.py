@@ -2,12 +2,13 @@
 Sherlog Inititator
 '''
 import logging
-import itertools
-import time
+import json
+import os
 import sys
 import boto3
 
 from botocore.exceptions import ClientError
+from datetime import datetime
 from .helpers.all_regions import all_regions
 from .helpers.loader import Loader
 from .helpers.pretty_output import PrettyOutput
@@ -59,9 +60,15 @@ class Sherlog:
             loader = Loader("Scanning...", "Done!", 0.05).start()
    
         # Verify credentials
+        if self.assume_role:
+            self.session = boto3.session.Session(
+                aws_access_key_id=self.assume_role['Credentials']['AccessKeyId'],
+                aws_secret_access_key=self.assume_role['Credentials']['SecretAccessKey'],
+                aws_session_token=self.assume_role['Credentials']['SessionToken']
+            )
         sts = self.session.client('sts')
         try:
-            sts.get_caller_identity()
+            log.debug(sts.get_caller_identity())
         except ClientError as client_error:
             self.pretty_output.print_color(text=str(client_error), color='red')
             self.pretty_output.print_color(text='Check if your AWS credentials are updated', color='red')
@@ -96,7 +103,13 @@ class Sherlog:
         # Finalizing Sherlog with output option
         if all_results:
             if self.output == "json":
-                return print(all_results)
+                # return print(all_results)
+                now = datetime.now()
+                if not os.path.isdir("output"):
+                    os.mkdir("output/")
+                output_file = f'output/results_{now}'
+                with open(output_file, "w+") as outfile:
+                    json.dump(all_results, outfile)
             if not self.output:
                 log.debug("Printing results on the console")
                 log.debug(all_results)
