@@ -140,3 +140,29 @@ class ResultsPrinter:
                                 else:
                                     print("Comments: "+comments[0])
                                 print("")
+                if 'logs' in result:
+                    for log_result in result['logs']:
+                        policy = ""
+                        for key, value in log_result.items():
+                            policy = key
+                        if log_result[policy]:
+                            self.pretty_output.print_color(
+                                header=policy,
+                                text=""
+                            )
+                            for policy_result in log_result[policy]:
+                                name = policy_result['name']
+                                arn = policy_result['arn']
+                                region = policy_result['region']
+                                comments = policy_result['comments']
+                                text = "Log group: "+policy_result['name']
+                                self.pretty_output.print_color(text=text, color="blue")
+                                print("Arn: "+policy_result['arn'])
+                                print('Region: '+region)
+                                if len(comments) > 1:
+                                    print("Comments:")
+                                    for comment in comments:
+                                        print("\t-"+comment)
+                                else:
+                                    print("Comments: "+comments[0])
+                                print("")

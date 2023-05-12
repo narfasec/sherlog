@@ -18,6 +18,7 @@ from .aws.rds import SherlogRDS
 from .aws.cloudfront import SherlogCF
 from .aws.dynamoDB import SherlogDynamo
 from .aws.elb import SherlogELB
+from .aws.cloudwatch import SherlogCWLogs
 
 class Sherlog:
     '''
@@ -78,10 +79,10 @@ class Sherlog:
         resource_tags=[]
         all_results = []
         resource_modules = [
-            # SherlogDynamo(log, self.session, self.regions, self.check_retention),
             SherlogRDS(log, self.session, self.regions, self.check_retention),
             SherlogCF(log, self.session, self.check_retention),
             SherlogELB(log, self.session, self.regions, self.check_retention),
+            SherlogCWLogs(log, self.session, self.regions, self.check_retention),
             SherlogS3(log, self.session, self.regions, self.check_retention, self.target_buckets)
         ]
 

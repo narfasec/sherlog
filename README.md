@@ -10,16 +10,17 @@ Sherlog will help you reducing the loggin gap on your AWS enviroment!
 
 AWS services covered by Sherlog:
 - S3
-- DynamoDB (without retention period evaluation)
 - Cloudfront
 - RDS Databases
 - ELBv2
+- CloudWatch (checks log group retention policy)
 
 To come:
+- DynamoDB
 - EC2
 - Redshift
 
-## Setup TODO
+## Setup
 Install with pypi
 ```
 pip install sherlog
@@ -30,7 +31,7 @@ Sherlog will require at least a an AWS profile with read permissions, the AWS **
 Sherlog does not have mandatory arguments. If no profile is given, sherlog will assume "default" AWS profile
 Usage:
 ```
-sherlog --profile <profile> [options]
+sherlog --profile <profile> | --assume <arn role> [options]
 ```
 
 Select a set of regions:
@@ -45,15 +46,8 @@ sherlog --profile <profile> --retention
 ## Integrations tests
 In case you want you to have an overview of what results are expectted feel free to use this TF code which provisions all resources covered by sherlog
 
-## Credits
-
-Octoguard team:
- - narfasec
- - 9rnt
- - franciscopalma
-
 ## Collaborate
 Feel free to Open PR's and contribute to sherlog!
 #### Rules
-- If you want to add a new feature, open a PR with a branch name starting with **feature-username:**
-- If you want to fix an issue from *issues*, open a PR with a branch name starting with **fix-issue-ID-username:**
+- If you want to add a new feature, open a PR with a branch name starting with **feature:**
+- If you want to fix an issue from *issues*, open a PR with a branch name starting with **fix-issue-ID:**
