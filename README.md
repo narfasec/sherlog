@@ -21,6 +21,11 @@ To come:
 - Redshift
 
 ## Setup
+### Install with TestPypi (not yet realeased in Pypi)
+```
+python3 -m pip install --index-url https://test.pypi.org/simple/ sherlog
+```
+
 Install with pypi
 ```
 pip install sherlog
