@@ -25,12 +25,19 @@ To come:
 ```
 python3 -m pip install --index-url https://test.pypi.org/simple/ sherlog
 ```
+### Git clone project
+```
+pip install -r requirements.txt
+cd source
+python3 main.py --help
+```
 
-Install with pypi
+### Install with pypi (Soon)
 ```
 pip install sherlog
 ```
-Sherlog will require at least a an AWS profile with read permissions, the AWS ***SecurityAudit*** permissions are good option
+
+### Sherlog will require at least a an AWS profile with read permissions, the AWS ***SecurityAudit*** permissions are good option
 ## How to use
 
 Sherlog does not have mandatory arguments. If no profile is given, sherlog will assume "default" AWS profile
